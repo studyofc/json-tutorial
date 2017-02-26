@@ -1,8 +1,15 @@
 #include "leptjson.h"
 #include <assert.h>  /* assert() */
 #include <stdlib.h>  /* NULL, strtod() */
+#include <ctype.h>
+#include <string.h>
+#include <math.h>
+#include <errno.h>
 
 #define EXPECT(c, ch)       do { assert(*c->json == (ch)); c->json++; } while(0)
+
+#define ISDIGIT(ch)         ((ch) >= '0' && (ch) <= '9')
+#define ISDIGIT1TO9(ch)     ((ch) >= '1' && (ch) <= '9')
 
 typedef struct {
     const char* json;
@@ -61,8 +68,32 @@ static int lept_parse_literal(lept_context* c, lept_value* v, const char* litera
 
 static int lept_parse_number(lept_context* c, lept_value* v) {
     char* end;
-    /* \TODO validate number */
+    /* validate number */
+
+
+	/* first char invalide(not a digit or "-") */
+	if (!isdigit(c->json[0]) && c->json[0] != '-')
+		return LEPT_PARSE_INVALID_VALUE;
+	
+	/* no number after ".", or more than one "." */
+	char* t;
+	if ((t = strchr(c->json, '.')) != NULL) {
+		t++;
+		if (*t == '\0')
+			return LEPT_PARSE_INVALID_VALUE;
+		else
+			if (strchr(t, '.') != NULL)
+				return LEPT_PARSE_INVALID_VALUE;
+	}
+	/* something not "." after '0' */
+	if (c->json[0] == '0' && strchr(c->json, '.') == NULL && *(c->json + 1) != '\0')
+		return LEPT_PARSE_ROOT_NOT_SINGULAR;
+
+	errno = 0;
     v->n = strtod(c->json, &end);
+	if (errno == ERANGE && (v->n == HUGE_VAL || v->n == -HUGE_VAL))
+		return LEPT_PARSE_NUMBER_TOO_BIG;
+
     if (c->json == end)
         return LEPT_PARSE_INVALID_VALUE;
     c->json = end;

@@ -39,7 +39,7 @@ static int lept_parse_value(lept_context* c, lept_value* v) {
 
 这问题其实涉及一些浮点数类型的细节，例如 IEEE-754 浮点数中，有所谓的 normal 和 subnormal 值，这里暂时不展开讨论了。以下是我加入的一些边界值，可能和同学的不完全一样。
 
-~~~
+~~~c
 TEST_NUMBER(1.0000000000000002, "1.0000000000000002"); /* the smallest number > 1 */
 TEST_NUMBER( 4.9406564584124654e-324, "4.9406564584124654e-324"); /* minimum denormal */
 TEST_NUMBER(-4.9406564584124654e-324, "-4.9406564584124654e-324");
@@ -55,7 +55,7 @@ TEST_NUMBER(-1.7976931348623157e+308, "-1.7976931348623157e+308");
 
 有一些 JSON 解析器不使用 `strtod()` 而自行转换，例如在校验的同时，记录负号、尾数（整数和小数）和指数，然后 naive 地计算：
 
-~~~
+~~~c
 int negative = 0;
 int64_t mantissa = 0;
 int exp = 0;
@@ -88,7 +88,7 @@ static int lept_parse_number(lept_context* c, lept_value* v) {
 
 我们把语法再看一遍：
 
-~~~
+~~~c
 number = [ "-" ] int [ frac ] [ exp ]
 int = "0" / digit1-9 *digit
 frac = "." 1*digit
